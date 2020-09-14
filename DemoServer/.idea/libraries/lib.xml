@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../prosys-opc-ua-sdk-for-java-4.3.0-1075-client-server-evaluation/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../prosys-opc-ua-sdk-for-java-4.3.0-1075-client-server-evaluation/lib" recursive="false" />
+  </library>
+</component>
