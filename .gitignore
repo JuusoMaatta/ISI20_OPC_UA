@@ -24,6 +24,7 @@ hs_err_pid*
 
 # build artifacts
 DemoServer/bin
+AppServer/bin
 
 # fuse temp files
 .fuse*
