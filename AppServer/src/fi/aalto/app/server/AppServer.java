@@ -7,6 +7,10 @@ import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import com.prosysopc.ua.dictionary.irdi.server.IrdiServerInformationModel;
+import com.prosysopc.ua.padim.PADIMType;
+import com.prosysopc.ua.padim.server.PadimServerInformationModel;
+import com.prosysopc.ua.part19.server.Part19ServerInformationModel;
 import com.prosysopc.ua.stack.builtintypes.LocalizedText;
 import com.prosysopc.ua.stack.cert.PkiDirectoryCertificateStore;
 import com.prosysopc.ua.stack.cert.DefaultCertificateValidator;
@@ -24,6 +28,8 @@ import com.prosysopc.ua.UaApplication.Protocol;
 import com.prosysopc.ua.server.UaServer;
 import com.prosysopc.ua.server.UserValidator;
 
+import com.prosysopc.ua.types.di.server.DiServerInformationModel;
+import com.prosysopc.ua.types.plc.server.PlcServerInformationModel;
 import fi.aalto.app.server.AppNodeManager;
 import fi.aalto.app.server.DemoUserValidator;
 import fi.aalto.app.client.AppClient;
@@ -107,9 +113,21 @@ public class AppServer {
 
 	protected void createAddressSpace() {
 		try {
+			server.registerModel(DiServerInformationModel.MODEL);
+			server.registerModel(IrdiServerInformationModel.MODEL);
+			server.registerModel(Part19ServerInformationModel.MODEL);
+			server.registerModel(PadimServerInformationModel.MODEL);
+			server.registerModel(PlcServerInformationModel.MODEL);
+
+			server.getAddressSpace().loadModel(new File("Opc.Ua.Di.NodeSet2.xml").toURI());
+			server.getAddressSpace().loadModel(new File("Opc.Ua.IRDI.NodeSet2.xml").toURI());
+			server.getAddressSpace().loadModel(new File("Opc.Ua.Part19.NodeSet2.xml").toURI());
+			server.getAddressSpace().loadModel(new File("Opc.Ua.PADIM.NodeSet2.xml").toURI());
+			server.getAddressSpace().loadModel(new File("Opc.Ua.Plc.NodeSet2.xml").toURI());
+
 			this.appClient.connect();
 			appNodeManager = new AppNodeManager(server, AppNodeManager.NAMESPACE);
-			appNodeManager.createAddressSpace(appClient.getClient());
+			appNodeManager.createAddressSpace();
 			appNodeManager.getIoManager().addListeners(new AppIoManagerListener(appClient.getClient()));
 			appNodeManager.addListener(new AppNodeManagerListener(appClient.getClient(), this.server));
 		} catch (Exception e) {
@@ -117,7 +135,7 @@ public class AppServer {
 			return;
 		}
 	}
-	
+
 	protected void run(boolean enableSessionDiagnostics) {
 		try {
 			server.start();

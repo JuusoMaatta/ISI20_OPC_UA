@@ -1,7 +1,10 @@
 package fi.aalto.app.server;
 
+import java.io.File;
 import java.util.Locale;
 
+import com.prosysopc.ua.padim.PADIMType;
+import com.prosysopc.ua.padim.server.PADIMTypeNode;
 import com.prosysopc.ua.stack.builtintypes.LocalizedText;
 import com.prosysopc.ua.stack.builtintypes.NodeId;
 import com.prosysopc.ua.stack.core.Identifiers;
@@ -30,40 +33,15 @@ public class AppNodeManager extends NodeManagerUaNode {
 		// Auto-generated constructor stub
 	}
 
-	public void createAddressSpace(UaClient client) throws StatusException, UaInstantiationException {
-		
-		AddressSpace sourceAddressSpace = client.getAddressSpace();
+	public void createAddressSpace() throws StatusException, UaInstantiationException {
 
 		int ns = getNamespaceIndex();
 		final UaNode objectsFolder = getServer().getNodeManagerRoot().getObjectsFolder();
 
-		UaNode parent = objectsFolder;
-
-		// Base objects
-		parent = createFolder(ns, "CoDeSys.OPC.DA", parent);
-		parent = createFolder(ns, "PLC_GW3", parent);
-		parent = createFolder(ns, "Application", parent);
-		parent = createFolder(ns, "GVL_WP_HPP", parent);
-		
-		int sourceNs = 2; // TODO get sourceNs from client?
 		try {
-		    BrowseDescription browseDesc = new BrowseDescription();
-		    browseDesc.setNodeId(new NodeId(sourceNs, "GVL_WP_HPP"));
-		    browseDesc.setBrowseDirection(BrowseDirection.Forward);
-		    browseDesc.setReferenceTypeId(Identifiers.HasComponent);
-		    //browseDesc.setNodeClassMask(NodeClass.Variable.getMask());
-	
-			BrowseResult[] browseResult = sourceAddressSpace.browse(null, 0, browseDesc);
-	    	ReferenceDescription[] refs = browseResult[0].getReferences();
-
-	    	System.out.println("Number of variables: " + refs.length);
-			    
-		    for (ReferenceDescription ref : refs) {
-		    	UaVariable var = sourceAddressSpace.getNode(ref.getNodeId(), UaVariable.class);
-		        String name = var.getBrowseName().getName();
-		        NodeId dataTypeId = var.getDataTypeId();
-		        createVariable(ns, name, dataTypeId, parent);
-		    }
+            final NodeId id = new NodeId(ns, "P300");
+			PADIMType P300 = createInstance(PADIMTypeNode.class, "P300", id);
+			objectsFolder.addComponent(P300);
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
 	    }
