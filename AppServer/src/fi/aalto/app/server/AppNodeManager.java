@@ -56,14 +56,17 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 			final NodeId simu_id = new NodeId(ns, "Simulation value");
 			PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
+			simu.setDataTypeId(Identifiers.Float);
 			P300_signal.addComponent(simu);
 
 			final NodeId actual_id = new NodeId(ns, "Actual value");
 			PlainProperty<Number> actual = new PlainProperty<Number>(this, actual_id, "Actual value", Locale.ENGLISH);
+			actual.setDataTypeId(Identifiers.Float);
 			P300_signal.addComponent(actual);
 
 			final NodeId state_id = new NodeId(ns, "Simulation state");
 			PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
+			state.setDataTypeId(Identifiers.Boolean);
 			P300_signal.addComponent(state);
 
 			final NodeId zeropointadjustment_id = new NodeId(ns, "ZeroPointAdjustment");
