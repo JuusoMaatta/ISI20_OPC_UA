@@ -28,6 +28,8 @@ import com.prosysopc.ua.server.UaServer;
 
 import fi.aalto.app.client.AppMonitoredDataItemListener;
 
+import static fi.aalto.app.server.ServerNameTranslator.translateNode;
+
 public class AppNodeManagerListener implements NodeManagerListener {
 
 	private UaClient client; 
@@ -131,7 +133,7 @@ public class AppNodeManagerListener implements NodeManagerListener {
 			Subscription subscription, MonitoredDataItem item) {
 		try {
 		    int sourceNs = 2; // TODO get this from somewhere?
-		    String name = item.getNodeId().getValue().toString();
+		    String name = translateNode(item.getNode());
 		    //System.out.println("onCreateMonitoredDataItem: " + name);
 		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredDataItem = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name), Attributes.Value, MonitoringMode.Reporting);
 		    clientMonitoredDataItem.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
@@ -163,7 +165,7 @@ public class AppNodeManagerListener implements NodeManagerListener {
 	public void onAfterDeleteMonitoredDataItem(ServiceContext serviceContext,
 			Subscription subscription, MonitoredDataItem item) {
 		try {
-	        String name = item.getNodeId().getValue().toString();
+	        String name = translateNode(item.getNode());
 		    //System.out.println("onAfterDeleteMonitoredDataItem: " + name);	
 		    com.prosysopc.ua.client.Subscription clientSubscription = client.getSubscriptions()[0];	
 		    com.prosysopc.ua.MonitoredItemBase[] clientMonitoredItems = clientSubscription.getItems(); 

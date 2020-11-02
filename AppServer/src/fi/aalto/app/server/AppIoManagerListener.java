@@ -17,6 +17,8 @@ import com.prosysopc.ua.client.UaClient;
 
 import java.util.HashMap;
 
+import static fi.aalto.app.server.ServerNameTranslator.translateNode;
+
 public class AppIoManagerListener implements IoManagerListener {
 	
 	private UaClient client; 
@@ -53,46 +55,6 @@ public class AppIoManagerListener implements IoManagerListener {
 			UaNode node, UnsignedInteger attributeId, DataValue dataValue)
 			throws StatusException {
 		return false;
-	}
-
-	private String translateNode(UaValueNode node) {
-		UaNode device = findPADIMParent(node);
-		HashMap<String, String> mapping = new HashMap<String, String>() {{
-			put("Simulation value", "MeasMan");
-			put("Actual value", "MeasVal");
-			put("Simulation state", "CurModeVal");
-		}};
-		return device.getBrowseName().getName() + "_" + mapping.get(node.getBrowseName().getName());
-	}
-
-	private UaNode findPADIMParent(UaNode child) {
-		UaNode parent = getParent(child);
-		while (!isPADIM(parent)) {
-			parent = getParent(parent);
-		}
-		return parent;
-	}
-
-	private boolean isPADIM(UaNode node) {
-		UaReference[] refs = node.getReferences();
-		for (UaReference ref : refs) {
-			if (ref.getSourceNode() == node &&
-					ref.getReferenceType().getDisplayName().getText().equals("HasTypeDefinition")) {
-				return ref.getTargetNode().getBrowseName().getName().equals("PADIMType");
-			}
-		}
-		return false;
-	}
-
-	private UaNode getParent(UaNode child) {
-		UaReference[] refs = child.getReferences();
-		for (UaReference ref : refs) {
-			if (ref.getTargetNode() == child &&
-					ref.getReferenceType().getDisplayName().getText().equals("HasComponent")) {
-				return ref.getSourceNode();
-			}
-		}
-		return null;
 	}
 
 	@Override

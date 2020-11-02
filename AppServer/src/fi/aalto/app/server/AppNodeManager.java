@@ -40,39 +40,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 		final UaNode objectsFolder = getServer().getNodeManagerRoot().getObjectsFolder();
 
 		try {
-            final NodeId id = new NodeId(ns, "P300");
-			PADIMType P300 = createInstance(PADIMTypeNode.class, "P300", id);
-			objectsFolder.addComponent(P300);
-
-			final NodeId signalset_id = new NodeId(ns, "SignalSet");
-			SignalSetType P300_signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
-			P300.addComponent(P300_signalset);
-
-			final NodeId measurement_id = new NodeId(ns, "Measurement");
-			AnalogSignalType P300_measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
-			P300_signalset.addComponent(P300_measurement);
-
-			UaNode P300_signal = P300_measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
-
-			final NodeId simu_id = new NodeId(ns, "Simulation value");
-			PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
-			simu.setDataTypeId(Identifiers.Float);
-			P300_signal.addComponent(simu);
-
-			final NodeId actual_id = new NodeId(ns, "Actual value");
-			PlainProperty<Number> actual = new PlainProperty<Number>(this, actual_id, "Actual value", Locale.ENGLISH);
-			actual.setDataTypeId(Identifiers.Float);
-			P300_signal.addComponent(actual);
-
-			final NodeId state_id = new NodeId(ns, "Simulation state");
-			PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
-			state.setDataTypeId(Identifiers.Boolean);
-			P300_signal.addComponent(state);
-
-			final NodeId zeropointadjustment_id = new NodeId(ns, "ZeroPointAdjustment");
-			PlainMethod zpa = new PlainMethod(this, zeropointadjustment_id, "ZeroPointAdjustment", Locale.ENGLISH); //createInstance(PlainMethod.class, "ZeroPointAdjustment", zeropointadjustment_id);
-			P300_measurement.addComponent(zpa);
-
+			createPADIM(ns, "P300", objectsFolder);
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
 	    }
@@ -82,6 +50,44 @@ public class AppNodeManager extends NodeManagerUaNode {
 	protected void init() throws StatusException, UaNodeFactoryException {
 		super.init();
 		
+	}
+
+	private PADIMType createPADIM(int ns, String name, UaNode parent)
+	{
+		final NodeId id = new NodeId(ns, name);
+		PADIMType padim = createInstance(PADIMTypeNode.class, name, id);
+		parent.addComponent(padim);
+
+		final NodeId signalset_id = new NodeId(ns, name + " SignalSet");
+		SignalSetType P300_signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
+		padim.addComponent(P300_signalset);
+
+		final NodeId measurement_id = new NodeId(ns, name + " Measurement");
+		AnalogSignalType P300_measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
+		P300_signalset.addComponent(P300_measurement);
+
+		UaNode P300_signal = P300_measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
+
+		final NodeId simu_id = new NodeId(ns, name + " Simulation value");
+		PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
+		simu.setDataTypeId(Identifiers.Float);
+		P300_signal.addComponent(simu);
+
+		final NodeId actual_id = new NodeId(ns, name + " Actual value");
+		PlainProperty<Number> actual = new PlainProperty<Number>(this, actual_id, "Actual value", Locale.ENGLISH);
+		actual.setDataTypeId(Identifiers.Float);
+		P300_signal.addComponent(actual);
+
+		final NodeId state_id = new NodeId(ns, name + " Simulation state");
+		PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
+		state.setDataTypeId(Identifiers.Boolean);
+		P300_signal.addComponent(state);
+
+		final NodeId zeropointadjustment_id = new NodeId(ns, name + " ZeroPointAdjustment");
+		PlainMethod zpa = new PlainMethod(this, zeropointadjustment_id, "ZeroPointAdjustment", Locale.ENGLISH); //createInstance(PlainMethod.class, "ZeroPointAdjustment", zeropointadjustment_id);
+		P300_measurement.addComponent(zpa);
+
+		return padim;
 	}
 
 	private UaObjectNode createFolder(int ns, String name, UaNode parent)

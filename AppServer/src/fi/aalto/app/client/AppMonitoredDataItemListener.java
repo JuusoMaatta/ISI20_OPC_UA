@@ -8,6 +8,8 @@ import com.prosysopc.ua.client.MonitoredDataItem;
 import com.prosysopc.ua.server.UaServer;
 import com.prosysopc.ua.nodes.UaVariable;
 
+import static fi.aalto.app.server.ServerNameTranslator.inverseTranslateNode;
+
 public class AppMonitoredDataItemListener implements MonitoredDataItemListener {
 
 	UaServer server; 
@@ -18,12 +20,11 @@ public class AppMonitoredDataItemListener implements MonitoredDataItemListener {
 	
 	@Override
 	public void onDataChange(MonitoredDataItem sender, DataValue prevValue, DataValue value) {
-		// TODO
 		try {
-		    String name = sender.getNodeId().getValue().toString();
+		    String name = inverseTranslateNode(sender.getNodeId().getValue().toString());
 		    //System.out.println("onDataChange: " + name + " " + value.getValue().getValue());
 		    //int ns = this.server.getNodeManagerRoot().getNamespaceIndex();
-		    int ns = 2;
+		    int ns = 7;
 		    UaVariable node = (UaVariable)this.server.getNodeManagerRoot().getNode(new NodeId(ns, name));
 		    node.setValue(value);
 		} catch (Exception e) {
