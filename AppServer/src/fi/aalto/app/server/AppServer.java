@@ -25,6 +25,7 @@ import com.prosysopc.ua.stack.utils.EndpointUtil;
 import com.prosysopc.ua.ApplicationIdentity;
 import com.prosysopc.ua.UserTokenPolicies;
 import com.prosysopc.ua.UaApplication.Protocol;
+import com.prosysopc.ua.server.EventManager;
 import com.prosysopc.ua.server.UaServer;
 import com.prosysopc.ua.server.UserValidator;
 
@@ -40,6 +41,7 @@ public class AppServer {
 	protected static int TCP_PORT = 52520;
 	protected static boolean enableSessionDiagnostics = false;
 	protected AppNodeManager appNodeManager;
+	//protected EventManager appEventManager;
 	protected UaServer server;
 	private AppClient appClient; 
 
@@ -130,6 +132,8 @@ public class AppServer {
 			appNodeManager.createAddressSpace();
 			appNodeManager.getIoManager().addListeners(new AppIoManagerListener(appClient.getClient()));
 			appNodeManager.addListener(new AppNodeManagerListener(appClient.getClient(), this.server));
+			//appEventManager = new EventManager(server, EventManager.NAMESPACE);
+			//appEventManager.addListener(new AppEventManagerListener(appClient.getClient(), this.server));
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			return;
