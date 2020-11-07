@@ -26,6 +26,7 @@ import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfi
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration.Builder;
 import com.prosysopc.ua.client.AddressSpace;
 import com.prosysopc.ua.client.UaClient;
+import com.prosysopc.ua.types.di.DiIds;
 import com.prosysopc.ua.types.opcua.BaseDataVariableType;
 import com.prosysopc.ua.types.opcua.Ids;
 import com.prosysopc.ua.types.opcua.NonExclusiveLimitAlarmType;
@@ -40,7 +41,15 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 	public AppNodeManager(UaServer arg0, String arg1) {
 		super(arg0, arg1);
-		// Auto-generated constructor stub
+
+		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
+				TypeDefinitionBasedNodeBuilderConfiguration.builder();
+
+		// Generate MethodSet automatically
+		conf.addOptional(UaBrowsePath.from(DiIds.TopologyElementType,
+				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "MethodSet")));
+
+		this.setNodeBuilderConfiguration(conf.build());
 	}
 
 	public void createAddressSpace() throws StatusException, UaInstantiationException {
@@ -94,9 +103,11 @@ public class AppNodeManager extends NodeManagerUaNode {
 		state.setDataTypeId(Identifiers.Boolean);
 		signal.addComponent(state);
 
-		final NodeId zeropointadjustment_id = new NodeId(ns, name + " ZeroPointAdjustment");
-		PlainMethod zpa = new PlainMethod(this, zeropointadjustment_id, "ZeroPointAdjustment", Locale.ENGLISH); //createInstance(PlainMethod.class, "ZeroPointAdjustment", zeropointadjustment_id);
-		measurement.addComponent(zpa);
+		createMethod(ns, "ZeroPointAdjustment", name + measurement.getBrowseName().getName(), measurement);
+
+		UaNode methodSet = padim.getMethodSetNode();
+		createMethod(ns, "SetModeAuto", name, methodSet);
+		createMethod(ns, "SetModeMan", name, methodSet);
 
 		//Creating alarm
 		try {
@@ -156,6 +167,12 @@ public class AppNodeManager extends NodeManagerUaNode {
 				// + HasNotifier, these are used to link the source of the EventSource
 				// up in the address space hierarchy
 				objFolder.addReference(parent, Identifiers.HasNotifier, false);
+	}
+
+	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {
+		final NodeId id = new NodeId(ns, name_prefix + " " + name);
+		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
+		parent.addComponent(method);
 	}
 				
 	private UaObjectNode createFolder(int ns, String name, UaNode parent)
