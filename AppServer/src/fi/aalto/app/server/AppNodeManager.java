@@ -70,33 +70,33 @@ public class AppNodeManager extends NodeManagerUaNode {
 		parent.addComponent(padim);
 		
 		final NodeId signalset_id = new NodeId(ns, name + " SignalSet");
-		SignalSetType P300_signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
-		padim.addComponent(P300_signalset);
+		SignalSetType signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
+		padim.addComponent(signalset);
 
 		final NodeId measurement_id = new NodeId(ns, name + " Measurement");
-		AnalogSignalType P300_measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
-		P300_signalset.addComponent(P300_measurement);
+		AnalogSignalType measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
+		signalset.addComponent(measurement);
 
-		UaNode P300_signal = P300_measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
+		UaNode signal = measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
 
 		final NodeId simu_id = new NodeId(ns, name + " Simulation value");
 		PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
 		simu.setDataTypeId(Identifiers.Float);
-		P300_signal.addComponent(simu);
+		signal.addComponent(simu);
 
 		final NodeId actual_id = new NodeId(ns, name + " Actual value");
 		PlainProperty<Number> actual = new PlainProperty<Number>(this, actual_id, "Actual value", Locale.ENGLISH);
 		actual.setDataTypeId(Identifiers.Float);
-		P300_signal.addComponent(actual);
+		signal.addComponent(actual);
 
 		final NodeId state_id = new NodeId(ns, name + " Simulation state");
 		PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
 		state.setDataTypeId(Identifiers.Boolean);
-		P300_signal.addComponent(state);
+		signal.addComponent(state);
 
 		final NodeId zeropointadjustment_id = new NodeId(ns, name + " ZeroPointAdjustment");
 		PlainMethod zpa = new PlainMethod(this, zeropointadjustment_id, "ZeroPointAdjustment", Locale.ENGLISH); //createInstance(PlainMethod.class, "ZeroPointAdjustment", zeropointadjustment_id);
-		P300_measurement.addComponent(zpa);
+		measurement.addComponent(zpa);
 
 		//Creating alarm
 		try {
