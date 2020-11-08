@@ -6,7 +6,7 @@ import java.util.Locale;
 import com.prosysopc.ua.nodes.*;
 import com.prosysopc.ua.padim.*;
 import com.prosysopc.ua.padim.server.*;
-import com.prosysopc.ua.server.ServiceContext;
+import com.prosysopc.ua.server.*;
 import com.prosysopc.ua.server.nodes.*;
 import com.prosysopc.ua.stack.builtintypes.LocalizedText;
 import com.prosysopc.ua.stack.builtintypes.NodeId;
@@ -19,9 +19,6 @@ import com.prosysopc.ua.stack.core.ReferenceDescription;
 import com.prosysopc.ua.StatusException;
 import com.prosysopc.ua.UaBrowsePath;
 import com.prosysopc.ua.UaQualifiedName;
-import com.prosysopc.ua.server.NodeManagerUaNode;
-import com.prosysopc.ua.server.UaInstantiationException;
-import com.prosysopc.ua.server.UaServer;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration.Builder;
 import com.prosysopc.ua.client.AddressSpace;
@@ -38,6 +35,7 @@ import com.prosysopc.ua.types.opcua.server.TwoStateVariableTypeNode;
 public class AppNodeManager extends NodeManagerUaNode {
 
 	public static final String NAMESPACE = "http://localhost/OPCUA/AppAddressSpace";
+	private MethodManager methodManager;
 
 	public AppNodeManager(UaServer arg0, String arg1) {
 		super(arg0, arg1);
@@ -50,6 +48,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "MethodSet")));
 
 		this.setNodeBuilderConfiguration(conf.build());
+		methodManager = new MethodManagerUaNode(this);
 	}
 
 	public void createAddressSpace() throws StatusException, UaInstantiationException {
@@ -173,6 +172,9 @@ public class AppNodeManager extends NodeManagerUaNode {
 		final NodeId id = new NodeId(ns, name_prefix + " " + name);
 		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
 		parent.addComponent(method);
+
+		AppMethodManagerListener listener = new AppMethodManagerListener(method);
+		((MethodManagerUaNode)methodManager).addCallListener(listener);
 	}
 				
 	private UaObjectNode createFolder(int ns, String name, UaNode parent)
