@@ -34,7 +34,7 @@ public class ServerNameTranslator {
     }
 
     private static UaNode findPADIMParent(UaNode child) {
-        UaNode parent = getParent(child);
+        UaNode parent = child;
         while (!isPADIM(parent)) {
             parent = getParent(parent);
         }
