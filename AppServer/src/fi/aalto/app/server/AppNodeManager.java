@@ -6,7 +6,7 @@ import java.util.Locale;
 import com.prosysopc.ua.nodes.*;
 import com.prosysopc.ua.padim.*;
 import com.prosysopc.ua.padim.server.*;
-import com.prosysopc.ua.server.ServiceContext;
+import com.prosysopc.ua.server.*;
 import com.prosysopc.ua.server.nodes.*;
 import com.prosysopc.ua.stack.builtintypes.LocalizedText;
 import com.prosysopc.ua.stack.builtintypes.NodeId;
@@ -19,13 +19,11 @@ import com.prosysopc.ua.stack.core.ReferenceDescription;
 import com.prosysopc.ua.StatusException;
 import com.prosysopc.ua.UaBrowsePath;
 import com.prosysopc.ua.UaQualifiedName;
-import com.prosysopc.ua.server.NodeManagerUaNode;
-import com.prosysopc.ua.server.UaInstantiationException;
-import com.prosysopc.ua.server.UaServer;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration.Builder;
 import com.prosysopc.ua.client.AddressSpace;
 import com.prosysopc.ua.client.UaClient;
+import com.prosysopc.ua.types.di.DiIds;
 import com.prosysopc.ua.types.opcua.BaseDataVariableType;
 import com.prosysopc.ua.types.opcua.Ids;
 import com.prosysopc.ua.types.opcua.NonExclusiveLimitAlarmType;
@@ -37,10 +35,20 @@ import com.prosysopc.ua.types.opcua.server.TwoStateVariableTypeNode;
 public class AppNodeManager extends NodeManagerUaNode {
 
 	public static final String NAMESPACE = "http://localhost/OPCUA/AppAddressSpace";
+	private MethodManager methodManager;
 
 	public AppNodeManager(UaServer arg0, String arg1) {
 		super(arg0, arg1);
-		// Auto-generated constructor stub
+
+		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
+				TypeDefinitionBasedNodeBuilderConfiguration.builder();
+
+		// Generate MethodSet automatically
+		conf.addOptional(UaBrowsePath.from(DiIds.TopologyElementType,
+				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "MethodSet")));
+
+		this.setNodeBuilderConfiguration(conf.build());
+		methodManager = new MethodManagerUaNode(this);
 	}
 
 	public void createAddressSpace() throws StatusException, UaInstantiationException {
@@ -70,33 +78,35 @@ public class AppNodeManager extends NodeManagerUaNode {
 		parent.addComponent(padim);
 		
 		final NodeId signalset_id = new NodeId(ns, name + " SignalSet");
-		SignalSetType P300_signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
-		padim.addComponent(P300_signalset);
+		SignalSetType signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
+		padim.addComponent(signalset);
 
 		final NodeId measurement_id = new NodeId(ns, name + " Measurement");
-		AnalogSignalType P300_measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
-		P300_signalset.addComponent(P300_measurement);
+		AnalogSignalType measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
+		signalset.addComponent(measurement);
 
-		UaNode P300_signal = P300_measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
+		UaNode signal = measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
 
 		final NodeId simu_id = new NodeId(ns, name + " Simulation value");
 		PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
 		simu.setDataTypeId(Identifiers.Float);
-		P300_signal.addComponent(simu);
+		signal.addComponent(simu);
 
 		final NodeId actual_id = new NodeId(ns, name + " Actual value");
 		PlainProperty<Number> actual = new PlainProperty<Number>(this, actual_id, "Actual value", Locale.ENGLISH);
 		actual.setDataTypeId(Identifiers.Float);
-		P300_signal.addComponent(actual);
+		signal.addComponent(actual);
 
 		final NodeId state_id = new NodeId(ns, name + " Simulation state");
 		PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
 		state.setDataTypeId(Identifiers.Boolean);
-		P300_signal.addComponent(state);
+		signal.addComponent(state);
 
-		final NodeId zeropointadjustment_id = new NodeId(ns, name + " ZeroPointAdjustment");
-		PlainMethod zpa = new PlainMethod(this, zeropointadjustment_id, "ZeroPointAdjustment", Locale.ENGLISH); //createInstance(PlainMethod.class, "ZeroPointAdjustment", zeropointadjustment_id);
-		P300_measurement.addComponent(zpa);
+		createMethod(ns, "ZeroPointAdjustment", name + measurement.getBrowseName().getName(), measurement);
+
+		UaNode methodSet = padim.getMethodSetNode();
+		createMethod(ns, "SetModeAuto", name, methodSet);
+		createMethod(ns, "SetModeMan", name, methodSet);
 
 		//Creating alarm
 		try {
@@ -159,6 +169,15 @@ public class AppNodeManager extends NodeManagerUaNode {
 				// + HasNotifier, these are used to link the source of the EventSource
 				// up in the address space hierarchy
 				objFolder.addReference(parent, Identifiers.HasNotifier, false);
+	}
+
+	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {
+		final NodeId id = new NodeId(ns, name_prefix + " " + name);
+		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
+		parent.addComponent(method);
+
+		AppMethodManagerListener listener = new AppMethodManagerListener(method);
+		((MethodManagerUaNode)methodManager).addCallListener(listener);
 	}
 				
 	private UaObjectNode createFolder(int ns, String name, UaNode parent)
