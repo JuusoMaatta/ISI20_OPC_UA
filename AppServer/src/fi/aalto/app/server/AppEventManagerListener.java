@@ -27,7 +27,9 @@ import com.prosysopc.ua.server.NodeManagerListener;
 import com.prosysopc.ua.server.ServiceContext;
 import com.prosysopc.ua.nodes.UaNode;
 import com.prosysopc.ua.nodes.UaReferenceType;
+import com.prosysopc.ua.nodes.UaVariable;
 import com.prosysopc.ua.StatusException;
+import com.prosysopc.ua.client.MonitoredEventItemListener;
 import com.prosysopc.ua.client.UaClient;
 import com.prosysopc.ua.server.Subscription;
 import com.prosysopc.ua.server.EventManager;
@@ -95,9 +97,36 @@ public class AppEventManagerListener implements EventManagerListener {
 	}
 
 	@Override
-	public void onAfterCreateMonitoredEventItem(ServiceContext arg0, Subscription arg1, MonitoredEventItem arg2) {
-		// TODO Auto-generated method stub
+	public void onAfterCreateMonitoredEventItem(ServiceContext serviceContext, Subscription subscription, MonitoredEventItem item) {
 		
+		try {
+		    int sourceNs = 2; // TODO get this from somewhere?
+		    com.prosysopc.ua.client.Subscription clientSubscription = client.getSubscriptions()[0];
+		    String name = translateNode(item.getNode()); //Alarm -> _AlrmEvt
+		    
+		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableH = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name+"H"), Attributes.Value, MonitoringMode.Reporting);
+		    clientMonitoredAlarmVariableH.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
+		    clientSubscription.addItem(clientMonitoredAlarmVariableH);
+		    
+		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableHH = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name+"HH"), Attributes.Value, MonitoringMode.Reporting);
+		    clientMonitoredAlarmVariableHH.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
+		    clientSubscription.addItem(clientMonitoredAlarmVariableHH);
+		    
+		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableL = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name+"L"), Attributes.Value, MonitoringMode.Reporting);
+		    clientMonitoredAlarmVariableL.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
+		    clientSubscription.addItem(clientMonitoredAlarmVariableL);
+		    
+		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableLL = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name+"LL"), Attributes.Value, MonitoringMode.Reporting);
+		    clientMonitoredAlarmVariableLL.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
+		    clientSubscription.addItem(clientMonitoredAlarmVariableLL);
+		    
+		    com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableMsg = new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, name+"Msg"), Attributes.Value, MonitoringMode.Reporting);
+		    clientMonitoredAlarmVariableMsg.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
+		    clientSubscription.addItem(clientMonitoredAlarmVariableMsg);
+		    
+		} catch (Exception e) {
+		    System.out.println(e.getMessage());
+	    }
 	}
 
 	@Override
@@ -158,14 +187,13 @@ public class AppEventManagerListener implements EventManagerListener {
 	}
 
 	@Override
-	public void onCreateMonitoredEventItem(ServiceContext arg0, NodeId arg1, EventFilter arg2, EventFilterResult arg3)
+	public void onCreateMonitoredEventItem(ServiceContext serviceContext, NodeId nodeId, EventFilter filter, EventFilterResult filterResult)
 			throws StatusException {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
-	public void onDeleteMonitoredEventItem(ServiceContext arg0, Subscription arg1, MonitoredEventItem arg2) {
+	public void onDeleteMonitoredEventItem(ServiceContext serviceContext, Subscription subscription, MonitoredEventItem item) {
 		// TODO Auto-generated method stub
 		
 	}

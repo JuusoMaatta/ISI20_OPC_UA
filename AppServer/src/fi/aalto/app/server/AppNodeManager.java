@@ -117,7 +117,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 		//Creating Alarm object
 				final NodeId alarmObj_id = new NodeId(ns, name + " Alarm"); 
 				
-				// 		String name = source.getBrowseName().getName() + "Alarm";
+				// 	String name = source.getBrowseName().getName() + "Alarm";
 				// Since the HighHighLimit and others are Optional nodes,
 				// we need to define them to be instantiated.
 				TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
@@ -135,16 +135,19 @@ public class AppNodeManager extends NodeManagerUaNode {
 				// once after creating this NodeManager
 				this.setNodeBuilderConfiguration(conf.build());
 				NonExclusiveLimitAlarmTypeNode Alarm = createInstance(NonExclusiveLimitAlarmTypeNode.class, "Alarm", alarmObj_id);
+				
+				//Näitä ei ehkä tarvita
 				// ConditionSource is the node which has this condition
 				Alarm.setSource(source);
 				// Input is the node which has the measurement that generates the alarm
 				Alarm.setInput(measurement);
-				Alarm.setMessage(new LocalizedText("Level exceeded"));
-				Alarm.setSeverity(500); // Medium level warning
-				Alarm.setHighHighLimit(90.0);
-				Alarm.setHighLimit(70.0);
-				Alarm.setLowLimit(30.0);
-				Alarm.setLowLowLimit(10.0);
+				
+				
+				Alarm.setMessage(new LocalizedText("Level exceeded")); // TODO vaihda että tulee demoserveriltä
+				Alarm.setHighHighState(false); // Clientin ja serverin puolella variableja joten translaten avulla normaalisti luku
+				Alarm.setHighState(false);
+				Alarm.setLowState(false);
+				Alarm.setLowLowState(false);
 				Alarm.setEnabled(true);
 				parent.addComponent(Alarm); 
 				// + HasCondition, the SourceNode of the reference should normally
