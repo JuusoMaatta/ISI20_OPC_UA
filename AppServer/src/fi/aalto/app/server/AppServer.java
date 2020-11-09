@@ -11,6 +11,7 @@ import com.prosysopc.ua.dictionary.irdi.server.IrdiServerInformationModel;
 import com.prosysopc.ua.padim.PADIMType;
 import com.prosysopc.ua.padim.server.PadimServerInformationModel;
 import com.prosysopc.ua.part19.server.Part19ServerInformationModel;
+import com.prosysopc.ua.server.EventManagerUaNode;
 import com.prosysopc.ua.stack.builtintypes.LocalizedText;
 import com.prosysopc.ua.stack.cert.PkiDirectoryCertificateStore;
 import com.prosysopc.ua.stack.cert.DefaultCertificateValidator;

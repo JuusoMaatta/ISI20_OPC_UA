@@ -125,50 +125,49 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 	private void createAlarmNode(int ns, String name, UaVariable source, PlainProperty<Number> measurement, UaNode parent, UaNode objFolder) throws StatusException, UaInstantiationException {
 		//Creating Alarm object
-				final NodeId alarmObj_id = new NodeId(ns, name + " Alarm"); 
-				
-				// 	String name = source.getBrowseName().getName() + "Alarm";
-				// Since the HighHighLimit and others are Optional nodes,
-				// we need to define them to be instantiated.
-				TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
-				TypeDefinitionBasedNodeBuilderConfiguration.builder();
-				conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighHighLimit")));
-				conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighLimit")));
-				conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowLimit")));
-				conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowLowLimit")));
-				// The configuration must be set to be used
-				// this.getNodeManagerTable().setNodeBuilderConfiguration(conf.build()); //global
-				// this.setNodeBuilderConfiguration(conf.build()); //local to this NodeManager
-				//createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build()); //NodeBuilder specific
-				// (createInstance uses this internally)
-				// for purpose of this sample program, it is set to this manager, normally this would be set
-				// once after creating this NodeManager
-				this.setNodeBuilderConfiguration(conf.build());
-				NonExclusiveLimitAlarmTypeNode Alarm = createInstance(NonExclusiveLimitAlarmTypeNode.class, "Alarm", alarmObj_id);
-				
-				//Näitä ei ehkä tarvita
-				// ConditionSource is the node which has this condition
-				Alarm.setSource(source);
-				// Input is the node which has the measurement that generates the alarm
-				Alarm.setInput(measurement);
-				
-				
-				Alarm.setMessage(new LocalizedText("Level exceeded")); // TODO vaihda että tulee demoserveriltä
-				Alarm.setHighHighState(false); // Clientin ja serverin puolella variableja joten translaten avulla normaalisti luku
-				Alarm.setHighState(false);
-				Alarm.setLowState(false);
-				Alarm.setLowLowState(false);
-				Alarm.setEnabled(true);
-				parent.addComponent(Alarm); 
-				// + HasCondition, the SourceNode of the reference should normally
-				// correspond to the Source set above
-				source.addReference(Alarm, Identifiers.HasCondition, false);
-				// + EventSource, the target of the EventSource is normally the
-				// source of the HasCondition reference
-				parent.addReference(source, Identifiers.HasEventSource, false);
-				// + HasNotifier, these are used to link the source of the EventSource
-				// up in the address space hierarchy
-				objFolder.addReference(parent, Identifiers.HasNotifier, false);
+		final NodeId alarmObj_id = new NodeId(ns, name + " Alarm");
+
+		// 	String name = source.getBrowseName().getName() + "Alarm";
+		// Since the HighHighLimit and others are Optional nodes,
+		// we need to define them to be instantiated.
+		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
+		TypeDefinitionBasedNodeBuilderConfiguration.builder();
+		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighHighState")));
+		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighState")));
+		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowState")));
+		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowLowState")));
+		// The configuration must be set to be used
+		// this.getNodeManagerTable().setNodeBuilderConfiguration(conf.build()); //global
+		// this.setNodeBuilderConfiguration(conf.build()); //local to this NodeManager
+		//createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build()); //NodeBuilder specific
+		// (createInstance uses this internally)
+		// for purpose of this sample program, it is set to this manager, normally this would be set
+		// once after creating this NodeManager
+		this.setNodeBuilderConfiguration(conf.build());
+		NonExclusiveLimitAlarmTypeNode Alarm = createInstance(NonExclusiveLimitAlarmTypeNode.class, "Alarm", alarmObj_id);
+
+		//Nï¿½itï¿½ ei ehkï¿½ tarvita
+		// ConditionSource is the node which has this condition
+		Alarm.setSource(source);
+		// Input is the node which has the measurement that generates the alarm
+		Alarm.setInput(measurement);
+
+		Alarm.setMessage(new LocalizedText("Level exceeded")); // TODO vaihda ettï¿½ tulee demoserveriltï¿½
+		Alarm.setHighHighState(false); // Clientin ja serverin puolella variableja joten translaten avulla normaalisti luku
+		Alarm.setHighState(false);
+		Alarm.setLowState(false);
+		Alarm.setLowLowState(false);
+		Alarm.setEnabled(true);
+		parent.addComponent(Alarm);
+		// + HasCondition, the SourceNode of the reference should normally
+		// correspond to the Source set above
+		source.addReference(Alarm, Identifiers.HasCondition, false);
+		// + EventSource, the target of the EventSource is normally the
+		// source of the HasCondition reference
+		parent.addReference(source, Identifiers.HasEventSource, false);
+		// + HasNotifier, these are used to link the source of the EventSource
+		// up in the address space hierarchy
+		objFolder.addReference(parent, Identifiers.HasNotifier, false);
 	}
 
 	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {

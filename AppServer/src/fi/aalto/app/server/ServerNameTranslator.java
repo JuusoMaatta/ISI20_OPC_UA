@@ -13,6 +13,7 @@ public class ServerNameTranslator {
         put("Simulation value", "MeasMan");
         put("Actual value", "MeasVal");
         put("Simulation state", "CurModeVal");
+        put("HighState", "AlrmEvtH");
     }};
 
     public static String translateNode(UaNode node) {
