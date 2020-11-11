@@ -19,16 +19,20 @@ import com.prosysopc.ua.stack.core.ReferenceDescription;
 import com.prosysopc.ua.StatusException;
 import com.prosysopc.ua.UaBrowsePath;
 import com.prosysopc.ua.UaQualifiedName;
+import com.prosysopc.ua.server.instantiation.NodeBuilder;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration;
 import com.prosysopc.ua.server.instantiation.TypeDefinitionBasedNodeBuilderConfiguration.Builder;
 import com.prosysopc.ua.client.AddressSpace;
 import com.prosysopc.ua.client.UaClient;
 import com.prosysopc.ua.types.di.DiIds;
+import com.prosysopc.ua.types.opcua.AlarmConditionType;
 import com.prosysopc.ua.types.opcua.BaseDataVariableType;
 import com.prosysopc.ua.types.opcua.Ids;
 import com.prosysopc.ua.types.opcua.NonExclusiveLimitAlarmType;
 import com.prosysopc.ua.types.opcua.TwoStateVariableType;
+import com.prosysopc.ua.types.opcua.server.AlarmConditionTypeNode;
 import com.prosysopc.ua.types.opcua.server.BaseDataVariableTypeNode;
+import com.prosysopc.ua.types.opcua.server.ConditionTypeNode;
 import com.prosysopc.ua.types.opcua.server.NonExclusiveLimitAlarmTypeNode;
 import com.prosysopc.ua.types.opcua.server.TwoStateVariableTypeNode;
 
@@ -58,7 +62,6 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 		try {
 			createPADIM(ns, "P300", objectsFolder);
-			
 			
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
@@ -101,75 +104,81 @@ public class AppNodeManager extends NodeManagerUaNode {
 		PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
 		state.setDataTypeId(Identifiers.Boolean);
 		signal.addComponent(state);
-
+		
 		createMethod(ns, "ZeroPointAdjustment", name + measurement.getBrowseName().getName(), measurement);
 
 		UaNode methodSet = padim.getMethodSetNode();
 		createMethod(ns, "SetModeAuto", name, methodSet);
 		createMethod(ns, "SetModeMan", name, methodSet);
-
-		//Creating alarm
+		
 		try {
-			createAlarmNode(ns, name, actual, actual, padim, parent);
+			createAlarms(ns, padim, parent);
 		} catch (StatusException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UaInstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 	
-		
 		return padim;
 	}
 
-	private void createAlarmNode(int ns, String name, UaVariable source, PlainProperty<Number> measurement, UaNode parent, UaNode objFolder) throws StatusException, UaInstantiationException {
-		//Creating Alarm object
-		final NodeId alarmObj_id = new NodeId(ns, name + " Alarm");
-
-		// 	String name = source.getBrowseName().getName() + "Alarm";
-		// Since the HighHighLimit and others are Optional nodes,
-		// we need to define them to be instantiated.
+	private void createAlarms(int ns, UaNode parent, UaNode objFolder) throws StatusException, UaInstantiationException {
+		String parentName = parent.getDisplayName().toString();
+		final NodeId alarmObj_id = new NodeId(ns, parentName + " Alarm");
+		ConditionTypeNode Alarm = initAlarm(parentName, "Alarm", alarmObj_id);
+		Alarm.setEnabled(false);
+		parent.addComponent(Alarm);
+		objFolder.addReference(parent, Identifiers.HasNotifier, false);
+		if (parentName.equals("M200") || parentName.equals("Y301") || parentName.equals("Y303") ||parentName.equals("Y501")) {
+			final NodeId alarmObj_id2 = new NodeId(ns, parentName + " Interrupt");
+			ConditionTypeNode Alarm2 = initAlarm(parentName, "Interrupt", alarmObj_id2);
+			Alarm2.setEnabled(false);
+			parent.addComponent(Alarm2);
+			objFolder.addReference(parent, Identifiers.HasNotifier, false);
+		}
+	}
+	
+	private ConditionTypeNode initAlarm(String type, String name, NodeId id) {
+		ConditionTypeNode Alarm;
+		if (type.equals("P300") || type.equals("T300")) {
+		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf = ConfigureLimitAlarm(type);
+		NodeBuilder<NonExclusiveLimitAlarmTypeNode> nb = createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build());
+		nb.setBrowseName(new QualifiedName(name));
+		nb.setDisplayName(new LocalizedText(name));
+		nb.setNodeId(id);
+		NonExclusiveLimitAlarmTypeNode Alarm1;
+		try {
+			Alarm1 = nb.build();
+			Alarm1.setHighHighState(false); 
+			Alarm1.setHighState(false);
+			Alarm1.setLowState(false);
+			Alarm1.setLowLowState(false);
+			Alarm = Alarm1;
+			return Alarm;
+		} catch (NodeBuilderException e) {
+			e.printStackTrace();
+			return null;
+		}
+		}
+		else if (type.equals("PIC300") || type.equals("L300") || type.equals("L301") || type.equals("M200") || type.equals("Y301") || type.equals("Y303") || type.equals("Y501")) {
+		AlarmConditionTypeNode Alarm1 = createInstance(AlarmConditionTypeNode.class, name, id);
+		Alarm1.setActive(false);
+		Alarm = Alarm1;
+		return Alarm;
+		}
+		return null;
+	}
+	
+	private TypeDefinitionBasedNodeBuilderConfiguration.Builder ConfigureLimitAlarm(String type) {
 		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
-		TypeDefinitionBasedNodeBuilderConfiguration.builder();
+		TypeDefinitionBasedNodeBuilderConfiguration.builder();	
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighHighState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowLowState")));
-		// The configuration must be set to be used
-		// this.getNodeManagerTable().setNodeBuilderConfiguration(conf.build()); //global
-		// this.setNodeBuilderConfiguration(conf.build()); //local to this NodeManager
-		//createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build()); //NodeBuilder specific
-		// (createInstance uses this internally)
-		// for purpose of this sample program, it is set to this manager, normally this would be set
-		// once after creating this NodeManager
-		this.setNodeBuilderConfiguration(conf.build());
-		NonExclusiveLimitAlarmTypeNode Alarm = createInstance(NonExclusiveLimitAlarmTypeNode.class, "Alarm", alarmObj_id);
-
-		//N�it� ei ehk� tarvita
-		// ConditionSource is the node which has this condition
-		Alarm.setSource(source);
-		// Input is the node which has the measurement that generates the alarm
-		Alarm.setInput(measurement);
-
-		Alarm.setMessage(new LocalizedText("Level exceeded")); // TODO vaihda ett� tulee demoserverilt�
-		Alarm.setHighHighState(false); // Clientin ja serverin puolella variableja joten translaten avulla normaalisti luku
-		Alarm.setHighState(false);
-		Alarm.setLowState(false);
-		Alarm.setLowLowState(false);
-		Alarm.setEnabled(true);
-		parent.addComponent(Alarm);
-		// + HasCondition, the SourceNode of the reference should normally
-		// correspond to the Source set above
-		source.addReference(Alarm, Identifiers.HasCondition, false);
-		// + EventSource, the target of the EventSource is normally the
-		// source of the HasCondition reference
-		parent.addReference(source, Identifiers.HasEventSource, false);
-		// + HasNotifier, these are used to link the source of the EventSource
-		// up in the address space hierarchy
-		objFolder.addReference(parent, Identifiers.HasNotifier, false);
+		return conf;
 	}
-
+	
 	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {
 		final NodeId id = new NodeId(ns, name_prefix + " " + name);
 		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
