@@ -40,9 +40,12 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 	public static final String NAMESPACE = "http://localhost/OPCUA/AppAddressSpace";
 	private MethodManager methodManager;
+	private final UaClient client;
 
-	public AppNodeManager(UaServer arg0, String arg1) {
+	public AppNodeManager(UaServer arg0, String arg1, UaClient client) {
 		super(arg0, arg1);
+
+		this.client = client;
 
 		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
 				TypeDefinitionBasedNodeBuilderConfiguration.builder();
@@ -117,7 +120,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 			e.printStackTrace();
 		} catch (UaInstantiationException e) {
 			e.printStackTrace();
-		} 
+		}
 	
 		return padim;
 	}
@@ -128,63 +131,64 @@ public class AppNodeManager extends NodeManagerUaNode {
 		ConditionTypeNode Alarm = initAlarm(parentName, "Alarm", alarmObj_id);
 		Alarm.setEnabled(false);
 		parent.addComponent(Alarm);
+		parent.addReference(Alarm, Identifiers.HasEventSource, false);
 		objFolder.addReference(parent, Identifiers.HasNotifier, false);
 		if (parentName.equals("M200") || parentName.equals("Y301") || parentName.equals("Y303") ||parentName.equals("Y501")) {
 			final NodeId alarmObj_id2 = new NodeId(ns, parentName + " Interrupt");
 			ConditionTypeNode Alarm2 = initAlarm(parentName, "Interrupt", alarmObj_id2);
 			Alarm2.setEnabled(false);
 			parent.addComponent(Alarm2);
-			objFolder.addReference(parent, Identifiers.HasNotifier, false);
+			parent.addReference(Alarm2, Identifiers.HasEventSource, false);
 		}
 	}
 	
 	private ConditionTypeNode initAlarm(String type, String name, NodeId id) {
 		ConditionTypeNode Alarm;
 		if (type.equals("P300") || type.equals("T300")) {
-		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf = ConfigureLimitAlarm(type);
-		NodeBuilder<NonExclusiveLimitAlarmTypeNode> nb = createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build());
-		nb.setBrowseName(new QualifiedName(name));
-		nb.setDisplayName(new LocalizedText(name));
-		nb.setNodeId(id);
-		NonExclusiveLimitAlarmTypeNode Alarm1;
-		try {
-			Alarm1 = nb.build();
-			Alarm1.setHighHighState(false); 
-			Alarm1.setHighState(false);
-			Alarm1.setLowState(false);
-			Alarm1.setLowLowState(false);
-			Alarm = Alarm1;
-			return Alarm;
-		} catch (NodeBuilderException e) {
-			e.printStackTrace();
-			return null;
-		}
+			TypeDefinitionBasedNodeBuilderConfiguration.Builder conf = ConfigureLimitAlarm(type);
+			NodeBuilder<NonExclusiveLimitAlarmTypeNode> nb = createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build());
+			nb.setBrowseName(new QualifiedName(name));
+			nb.setDisplayName(new LocalizedText(name));
+			nb.setNodeId(id);
+			NonExclusiveLimitAlarmTypeNode Alarm1;
+			try {
+				Alarm1 = nb.build();
+				Alarm1.setHighHighState(false);
+				Alarm1.setHighState(false);
+				Alarm1.setLowState(false);
+				Alarm1.setLowLowState(false);
+				Alarm = Alarm1;
+				return Alarm;
+			} catch (NodeBuilderException e) {
+				e.printStackTrace();
+				return null;
+			}
 		}
 		else if (type.equals("PIC300") || type.equals("L300") || type.equals("L301") || type.equals("M200") || type.equals("Y301") || type.equals("Y303") || type.equals("Y501")) {
-		AlarmConditionTypeNode Alarm1 = createInstance(AlarmConditionTypeNode.class, name, id);
-		Alarm1.setActive(false);
-		Alarm = Alarm1;
-		return Alarm;
+			AlarmConditionTypeNode Alarm1 = createInstance(AlarmConditionTypeNode.class, name, id);
+			Alarm1.setActive(false);
+			Alarm = Alarm1;
+			return Alarm;
 		}
 		return null;
 	}
-	
+
 	private TypeDefinitionBasedNodeBuilderConfiguration.Builder ConfigureLimitAlarm(String type) {
 		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
-		TypeDefinitionBasedNodeBuilderConfiguration.builder();	
+				TypeDefinitionBasedNodeBuilderConfiguration.builder();
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighHighState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("HighState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowState")));
 		conf.addOptional(UaBrowsePath.from(Ids.NonExclusiveLimitAlarmType, UaQualifiedName.standard("LowLowState")));
 		return conf;
 	}
-	
+
 	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {
 		final NodeId id = new NodeId(ns, name_prefix + " " + name);
 		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
 		parent.addComponent(method);
 
-		AppMethodManagerListener listener = new AppMethodManagerListener(method);
+		AppMethodManagerListener listener = new AppMethodManagerListener(method, this.client);
 		((MethodManagerUaNode)methodManager).addCallListener(listener);
 	}
 				

@@ -34,7 +34,7 @@ public class ServerNameTranslator {
         throw new RuntimeException("No AppServer node found for " + orig_name);
     }
 
-    private static UaNode findPADIMParent(UaNode child) {
+    public static UaNode findPADIMParent(UaNode child) {
         UaNode parent = child;
         while (!isPADIM(parent)) {
             parent = getParent(parent);

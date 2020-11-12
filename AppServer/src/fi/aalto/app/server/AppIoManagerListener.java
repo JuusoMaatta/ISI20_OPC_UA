@@ -1,13 +1,9 @@
 package fi.aalto.app.server;
 
 import com.prosysopc.ua.nodes.*;
-import com.prosysopc.ua.stack.builtintypes.NodeId;
-import com.prosysopc.ua.stack.builtintypes.StatusCode;
+import com.prosysopc.ua.stack.builtintypes.*;
 import com.prosysopc.ua.stack.utils.NumericRange;
 import com.prosysopc.ua.stack.core.TimestampsToReturn;
-import com.prosysopc.ua.stack.builtintypes.DateTime;
-import com.prosysopc.ua.stack.builtintypes.DataValue;
-import com.prosysopc.ua.stack.builtintypes.UnsignedInteger;
 import com.prosysopc.ua.stack.core.AccessLevelType;
 import com.prosysopc.ua.stack.core.AttributeWriteMask;
 import com.prosysopc.ua.server.io.IoManagerListener;
@@ -96,6 +92,10 @@ public class AppIoManagerListener implements IoManagerListener {
 
 		int sourceNs = 2; // TODO get sourceNs from client?
 		try {
+			if (node.getBrowseName().getName().equals("Simulation state")) {
+				String val = dataValue.getValue().booleanValue() ? "MANUAL" : "AUTO";
+				dataValue = new DataValue(new Variant(val));
+			}
 		    client.writeValue(new NodeId(sourceNs, name), dataValue);
 			node.setValue(dataValue);
 			return true;

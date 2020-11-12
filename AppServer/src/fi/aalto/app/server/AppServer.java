@@ -128,7 +128,7 @@ public class AppServer {
 			server.getAddressSpace().loadModel(new File("Opc.Ua.Plc.NodeSet2.xml").toURI());
 
 			this.appClient.connect();
-			appNodeManager = new AppNodeManager(server, AppNodeManager.NAMESPACE);
+			appNodeManager = new AppNodeManager(server, AppNodeManager.NAMESPACE, this.appClient.getClient());
 			appNodeManager.createAddressSpace();
 			appNodeManager.getIoManager().addListeners(new AppIoManagerListener(appClient.getClient()));
 			appNodeManager.addListener(new AppNodeManagerListener(appClient.getClient(), this.server));
