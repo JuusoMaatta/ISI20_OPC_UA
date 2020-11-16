@@ -14,10 +14,21 @@ public class ServerNameTranslator {
         put("Actual value", "MeasVal");
         put("Simulation state", "CurModeVal");
         put("HighState", "AlrmEvtH");
+        put("Setpoint", "CtrlOut");
+        put("CurCtrlVal", "CurCtrlVal");
+        put("CurOutInt", "CurOutINT");
     }};
 
     public static String translateNode(UaNode node) {
         UaNode device = findPADIMParent(node);
+        if (device.getBrowseName().getName().charAt(0) == 'Y') {
+            switch (node.getBrowseName().getName()) {
+                case "Simulation value":
+                    return device.getBrowseName().getName() + "_ManCtrlVal";
+                case "Actual value":
+                    return device.getBrowseName().getName() + "_CtrlVal";
+            }
+        }
         return device.getBrowseName().getName() + "_" + mapping.get(node.getBrowseName().getName());
     }
 
@@ -25,6 +36,15 @@ public class ServerNameTranslator {
         String[] parts = orig_name.split("_");
         String device_name = parts[0];
         String feature_name = parts[1];
+
+        if (device_name.charAt(0) == 'Y') {
+            switch (feature_name) {
+                case "ManCtrlVal":
+                    return device_name + " Simulation value";
+                case "CtrlVal":
+                    return device_name + " Actual value";
+            }
+        }
 
         for (String key : mapping.keySet()) {
             if (mapping.get(key).equals(feature_name)) {

@@ -75,11 +75,14 @@ public class AppNodeManager extends NodeManagerUaNode {
 		final UaNode objectsFolder = getServer().getNodeManagerRoot().getObjectsFolder();
 
 		try {
-			createPADIM(ns, "P300", objectsFolder);
-			createPADIM(ns, "T300", objectsFolder);
-			createPADIM(ns, "L300", objectsFolder);
-			createPADIM(ns, "L301", objectsFolder);
-			createPADIM(ns, "M200", objectsFolder);
+			createPADIM(ns, "P300", objectsFolder, false, "Measurement", true, null);
+			createPADIM(ns, "T300", objectsFolder, false, "Measurement", true, null);
+			createPADIM(ns, "L300", objectsFolder, false, "Level", false, null);
+			createPADIM(ns, "L301", objectsFolder, false, "Level", false, null);
+			createPADIM(ns, "M200", objectsFolder, true, "Control", false, null);
+			createPADIM(ns, "Y301", objectsFolder, true, "Control", false, "CurOutInt");
+			createPADIM(ns, "Y303", objectsFolder, true, "Control", false, "CurOutInt");
+			createPADIM(ns, "Y501", objectsFolder, true, "Control", false, "CurCtrlVal");
 			createPLC(ns, "PIC300", objectsFolder);
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
@@ -92,7 +95,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 		
 	}
 
-	private PADIMType createPADIM(int ns, String name, UaNode parent)
+	private PADIMType createPADIM(int ns, String name, UaNode parent, boolean controlSignal, String signalName, boolean zeroPoint, String extraSignalParameter)
 	{
 		final NodeId id = new NodeId(ns, name);
 		PADIMType padim = createInstance(PADIMTypeNode.class, name, id);
@@ -102,11 +105,25 @@ public class AppNodeManager extends NodeManagerUaNode {
 		SignalSetType signalset = createInstance(SignalSetTypeNode.class, "SignalSet", signalset_id);
 		padim.addComponent(signalset);
 
-		final NodeId measurement_id = new NodeId(ns, name + " Measurement");
-		AnalogSignalType measurement = createInstance(AnalogSignalTypeNode.class, "Measurement", measurement_id);
-		signalset.addComponent(measurement);
+		UaNode signal = null;
+		UaNode measurement;
+		final NodeId measurement_id = new NodeId(ns, name + " " + signalName);
+		if (controlSignal) {
+			measurement = createInstance(ControlSignalTypeNode.class, signalName, measurement_id);
+			signalset.addComponent(measurement);
 
-		UaNode signal = measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
+			signal = measurement.getComponent(new QualifiedName(2, "ControlSignal"));
+
+			final NodeId setpoint_id = new NodeId(ns, name + " Setpoint");
+			PlainProperty<Number> setpoint = new PlainProperty<Number>(this, setpoint_id, "Setpoint", Locale.ENGLISH);
+			setpoint.setDataTypeId(Identifiers.Float);
+			signal.addComponent(setpoint);
+		} else {
+			measurement = createInstance(AnalogSignalTypeNode.class, signalName, measurement_id);
+			signalset.addComponent(measurement);
+
+			signal = measurement.getComponent(new QualifiedName(2, "AnalogSignal"));
+		}
 
 		final NodeId simu_id = new NodeId(ns, name + " Simulation value");
 		PlainProperty<Number> simu = new PlainProperty<Number>(this, simu_id, "Simulation value", Locale.ENGLISH);
@@ -122,9 +139,22 @@ public class AppNodeManager extends NodeManagerUaNode {
 		PlainProperty<Boolean> state = new PlainProperty<Boolean>(this, state_id, "Simulation state", Locale.ENGLISH);
 		state.setDataTypeId(Identifiers.Boolean);
 		signal.addComponent(state);
-		
-		createMethod(ns, "ZeroPointAdjustment",
-				name + measurement.getBrowseName().getName(), measurement, padim);
+
+		if (extraSignalParameter != null) {
+			final NodeId extra_id = new NodeId(ns, name + " " + extraSignalParameter);
+			PlainProperty<Boolean> extra = new PlainProperty<Boolean>(this, extra_id, extraSignalParameter, Locale.ENGLISH);
+			if (extraSignalParameter.equals("CurCtrlVal")) {
+				extra.setDataTypeId(Identifiers.Float);
+			} else {
+				extra.setDataTypeId(Identifiers.Integer);
+			}
+			signal.addComponent(extra);
+		}
+
+		if (zeroPoint) {
+			createMethod(ns, "ZeroPointAdjustment",
+					name + measurement.getBrowseName().getName(), measurement, padim);
+		}
 
 		UaNode methodSet = padim.getMethodSetNode();
 		createMethod(ns, "SetModeAuto", name, methodSet, padim);
