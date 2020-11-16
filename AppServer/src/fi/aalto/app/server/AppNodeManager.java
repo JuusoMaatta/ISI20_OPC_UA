@@ -35,11 +35,14 @@ import com.prosysopc.ua.types.opcua.server.BaseDataVariableTypeNode;
 import com.prosysopc.ua.types.opcua.server.ConditionTypeNode;
 import com.prosysopc.ua.types.opcua.server.NonExclusiveLimitAlarmTypeNode;
 import com.prosysopc.ua.types.opcua.server.TwoStateVariableTypeNode;
+import com.prosysopc.ua.types.plc.CtrlConfigurationType;
+import com.prosysopc.ua.types.plc.PlcIds;
+import com.prosysopc.ua.types.plc.server.CtrlConfigurationTypeNode;
 
 public class AppNodeManager extends NodeManagerUaNode {
 
 	public static final String NAMESPACE = "http://localhost/OPCUA/AppAddressSpace";
-	private MethodManager methodManager;
+	private final MethodManager methodManager;
 	private final UaClient client;
 
 	public AppNodeManager(UaServer arg0, String arg1, UaClient client) {
@@ -50,9 +53,17 @@ public class AppNodeManager extends NodeManagerUaNode {
 		TypeDefinitionBasedNodeBuilderConfiguration.Builder conf =
 				TypeDefinitionBasedNodeBuilderConfiguration.builder();
 
-		// Generate MethodSet automatically
-		conf.addOptional(UaBrowsePath.from(DiIds.TopologyElementType,
+		conf.addOptional(UaBrowsePath.from(PadimIds.PADIMType,
 				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "MethodSet")));
+
+		conf.addOptional(UaBrowsePath.from(PlcIds.CtrlConfigurationType,
+				UaQualifiedName.from("http://PLCopen.org/OpcUa/IEC61131-3/", "MethodSet")));
+		conf.addOptional(UaBrowsePath.from(PlcIds.CtrlConfigurationType,
+				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "ParameterSet")));
+		conf.addOptional(UaBrowsePath.from(PlcIds.CtrlConfigurationType,
+				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "Configuration")));
+		conf.addOptional(UaBrowsePath.from(PlcIds.CtrlConfigurationType,
+				UaQualifiedName.from("http://opcfoundation.org/UA/DI/", "GlobalVars")));
 
 		this.setNodeBuilderConfiguration(conf.build());
 		methodManager = new MethodManagerUaNode(this);
@@ -65,7 +76,7 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 		try {
 			createPADIM(ns, "P300", objectsFolder);
-			
+			createPLC(ns, "PIC300", objectsFolder);
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
 	    }
@@ -108,11 +119,12 @@ public class AppNodeManager extends NodeManagerUaNode {
 		state.setDataTypeId(Identifiers.Boolean);
 		signal.addComponent(state);
 		
-		createMethod(ns, "ZeroPointAdjustment", name + measurement.getBrowseName().getName(), measurement);
+		createMethod(ns, "ZeroPointAdjustment",
+				name + measurement.getBrowseName().getName(), measurement, padim);
 
 		UaNode methodSet = padim.getMethodSetNode();
-		createMethod(ns, "SetModeAuto", name, methodSet);
-		createMethod(ns, "SetModeMan", name, methodSet);
+		createMethod(ns, "SetModeAuto", name, methodSet, padim);
+		createMethod(ns, "SetModeMan", name, methodSet, padim);
 		
 		try {
 			createAlarms(ns, padim, parent);
@@ -123,6 +135,57 @@ public class AppNodeManager extends NodeManagerUaNode {
 		}
 	
 		return padim;
+	}
+
+	private void createPLC(int ns, String name, UaNode parent) {
+		final NodeId id = new NodeId(ns, name);
+		CtrlConfigurationType plc = createInstance(CtrlConfigurationTypeNode.class, name, id);
+		parent.addComponent(plc);
+
+		// Methods
+		UaNode methodSet = plc.getMethodSetNode();
+		PlainMethod ctrlon = createMethod(ns, "CtrlOn", name, methodSet, plc);
+		PlainMethod ctrloff = createMethod(ns, "CtrlOff", name, methodSet, plc);
+		PlainMethod enable = createMethod(ns, "Enable", name, methodSet, plc);
+		PlainMethod reset = createMethod(ns, "PIDReset", name, methodSet, plc);
+		createMethod(ns, "SetModeAuto", name, methodSet, plc);
+		createMethod(ns, "SetModeMan", name, methodSet, plc);
+
+		UaNode config = plc.getConfigurationNode();
+		config.addReference(ctrlon, Identifiers.Organizes, false);
+		config.addReference(ctrloff, Identifiers.Organizes, false);
+		config.addReference(enable, Identifiers.Organizes, false);
+		config.addReference(reset, Identifiers.Organizes, false);
+
+		// Parameters
+		UaNode paramSet = plc.getParameterSetNode();
+		PlainVariable<String> curMode = createVariable(ns, "CurModeVal", Identifiers.String, paramSet);
+		PlainVariable<Float> ctrlVal = createVariable(ns, "CtrlVal", Identifiers.Float, paramSet);
+		PlainVariable<Float> curSPVal = createVariable(ns, "CurSPVal", Identifiers.Float, paramSet);
+		PlainVariable<Float> manCtrlVal = createVariable(ns, "ManCtrlVal", Identifiers.Float, paramSet);
+		PlainVariable<Float> Kp = createVariable(ns, "Kp", Identifiers.Float, paramSet);
+		PlainVariable<Float> Td = createVariable(ns, "Td", Identifiers.Float, paramSet);
+		PlainVariable<Float> Ti = createVariable(ns, "Ti", Identifiers.Float, paramSet);
+		PlainVariable<Float> SPVal = createVariable(ns, "SPVal", Identifiers.Float, paramSet);
+
+		UaNode globalVars = plc.getGlobalVarsNode();
+		globalVars.addReference(curMode, Identifiers.Organizes, false);
+		globalVars.addReference(ctrlVal, Identifiers.Organizes, false);
+		globalVars.addReference(curSPVal, Identifiers.Organizes, false);
+		globalVars.addReference(manCtrlVal, Identifiers.Organizes, false);
+
+		UaNode configVars = plc.getConfigVarsNode();
+		configVars.addReference(Kp, Identifiers.Organizes, false);
+		configVars.addReference(Td, Identifiers.Organizes, false);
+		configVars.addReference(Ti, Identifiers.Organizes, false);
+		configVars.addReference(SPVal, Identifiers.Organizes, false);
+
+		// Alarm
+		try {
+			createAlarms(ns, plc, parent);
+		} catch (StatusException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void createAlarms(int ns, UaNode parent, UaNode objFolder) throws StatusException, UaInstantiationException {
@@ -183,13 +246,15 @@ public class AppNodeManager extends NodeManagerUaNode {
 		return conf;
 	}
 
-	private void createMethod(int ns, String name, String name_prefix, UaNode parent) {
+	private PlainMethod createMethod(int ns, String name, String name_prefix, UaNode parent, UaNode device) {
 		final NodeId id = new NodeId(ns, name_prefix + " " + name);
 		PlainMethod method = new PlainMethod(this, id, name, Locale.ENGLISH);
 		parent.addComponent(method);
 
-		AppMethodManagerListener listener = new AppMethodManagerListener(method, this.client);
+		AppMethodManagerListener listener = new AppMethodManagerListener(method, this.client, device);
 		((MethodManagerUaNode)methodManager).addCallListener(listener);
+
+		return method;
 	}
 				
 	private UaObjectNode createFolder(int ns, String name, UaNode parent)

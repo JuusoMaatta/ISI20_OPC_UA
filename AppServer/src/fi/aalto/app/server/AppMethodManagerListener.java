@@ -24,11 +24,13 @@ public class AppMethodManagerListener implements CallableListener {
 
     private final UaNode method;
     private final UaClient client;
+    private final UaNode device;
 
-    public AppMethodManagerListener(UaNode myMethod, UaClient client) {
+    public AppMethodManagerListener(UaNode myMethod, UaClient client, UaNode device) {
         super();
         this.method = myMethod;
         this.client = client;
+        this.device = device;
     }
 
     @Override
@@ -38,12 +40,11 @@ public class AppMethodManagerListener implements CallableListener {
             throws StatusException {
         if (methodId.equals(method.getNodeId())) {
             String method_name = method.getBrowseName().getName();
-            PADIMTypeNode padim = (PADIMTypeNode)findPADIMParent(object);
             switch (method_name) {
                 case "SetModeAuto":
                     try {
                         UaNode state = object.getAddressSpace().getNode(new NodeId(7,
-                                padim.getBrowseName().getName() + " Simulation state"));
+                                device.getBrowseName().getName() + " Simulation state"));
                         ((UaValueNode)state).setValue(false);
                         String client_name = translateNode(state);
                         client.writeValue(new NodeId(2, client_name), new DataValue(new Variant("AUTO")));
@@ -54,13 +55,16 @@ public class AppMethodManagerListener implements CallableListener {
                 case "SetModeMan":
                     try {
                         UaNode state = object.getAddressSpace().getNode(new NodeId(7,
-                                padim.getBrowseName().getName() + " Simulation state"));
+                                device.getBrowseName().getName() + " Simulation state"));
                         ((UaValueNode)state).setValue(true);
                         String client_name = translateNode(state);
                         client.writeValue(new NodeId(2, client_name), new DataValue(new Variant("MANUAL")));
                     } catch (UaException e) {
                         e.printStackTrace();
                     }
+                    break;
+                default:
+                    System.out.println("Unhandled method called: " + method_name);
                     break;
             }
             return true;
