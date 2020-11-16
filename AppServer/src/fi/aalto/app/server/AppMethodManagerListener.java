@@ -24,11 +24,13 @@ public class AppMethodManagerListener implements CallableListener {
 
     private final UaNode method;
     private final UaClient client;
+    private final UaNode device;
 
-    public AppMethodManagerListener(UaNode myMethod, UaClient client) {
+    public AppMethodManagerListener(UaNode myMethod, UaClient client, UaNode device) {
         super();
         this.method = myMethod;
         this.client = client;
+        this.device = device;
     }
 
     @Override
@@ -36,17 +38,20 @@ public class AppMethodManagerListener implements CallableListener {
                           UaMethod method, final Variant[] inputArguments, final StatusCode[] inputArgumentResults,
                           final DiagnosticInfo[] inputArgumentDiagnosticInfos, final Variant[] outputs)
             throws StatusException {
-        if (methodId.equals(method.getNodeId())) {
+        if (methodId.equals(this.method.getNodeId())) {
             String method_name = method.getBrowseName().getName();
-            PADIMTypeNode padim = (PADIMTypeNode)findPADIMParent(object);
             switch (method_name) {
                 case "SetModeAuto":
                     try {
                         UaNode state = object.getAddressSpace().getNode(new NodeId(7,
-                                padim.getBrowseName().getName() + " Simulation state"));
+                                device.getBrowseName().getName() + " Simulation state"));
                         ((UaValueNode)state).setValue(false);
                         String client_name = translateNode(state);
                         client.writeValue(new NodeId(2, client_name), new DataValue(new Variant("AUTO")));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_SetModeAuto"),
+                                new DataValue(new Variant(true)));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_SetModeMan"),
+                                new DataValue(new Variant(false)));
                     } catch (UaException e) {
                         e.printStackTrace();
                     }
@@ -54,13 +59,64 @@ public class AppMethodManagerListener implements CallableListener {
                 case "SetModeMan":
                     try {
                         UaNode state = object.getAddressSpace().getNode(new NodeId(7,
-                                padim.getBrowseName().getName() + " Simulation state"));
+                                device.getBrowseName().getName() + " Simulation state"));
                         ((UaValueNode)state).setValue(true);
                         String client_name = translateNode(state);
                         client.writeValue(new NodeId(2, client_name), new DataValue(new Variant("MANUAL")));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_SetModeAuto"),
+                                new DataValue(new Variant(false)));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_SetModeMan"),
+                                new DataValue(new Variant(true)));
                     } catch (UaException e) {
                         e.printStackTrace();
                     }
+                    break;
+                case "ZeroPointAdjustment":
+                    try {
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_ZeroMeas"),
+                                new DataValue(new Variant(true)));
+                    } catch (UaException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "CtrlOn":
+                    try {
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_CtrlOn"),
+                                new DataValue(new Variant(true)));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_CtrlOff"),
+                                new DataValue(new Variant(false)));
+                    } catch (UaException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "CtrlOff":
+                    try {
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_CtrlOn"),
+                                new DataValue(new Variant(false)));
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_CtrlOff"),
+                                new DataValue(new Variant(true)));
+                    } catch (UaException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "Enable":
+                    try {
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_Enable"),
+                                new DataValue(new Variant(true)));
+                    } catch (UaException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "PIDReset":
+                    try {
+                        client.writeValue(new NodeId(2, device.getBrowseName().getName() + "_PIDReset"),
+                                new DataValue(new Variant(true)));
+                    } catch (UaException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                default:
+                    System.out.println("Unhandled method called: " + method_name);
                     break;
             }
             return true;
