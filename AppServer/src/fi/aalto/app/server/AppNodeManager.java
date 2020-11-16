@@ -76,6 +76,10 @@ public class AppNodeManager extends NodeManagerUaNode {
 
 		try {
 			createPADIM(ns, "P300", objectsFolder);
+			createPADIM(ns, "T300", objectsFolder);
+			createPADIM(ns, "L300", objectsFolder);
+			createPADIM(ns, "L301", objectsFolder);
+			createPADIM(ns, "M200", objectsFolder);
 			createPLC(ns, "PIC300", objectsFolder);
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
@@ -191,26 +195,26 @@ public class AppNodeManager extends NodeManagerUaNode {
 	private void createAlarms(int ns, UaNode parent, UaNode objFolder) throws StatusException, UaInstantiationException {
 		String parentName = parent.getDisplayName().toString();
 		final NodeId alarmObj_id = new NodeId(ns, parentName + " Alarm");
-		ConditionTypeNode Alarm = initAlarm(parentName, "Alarm", alarmObj_id);
+		ConditionTypeNode Alarm = initAlarm(ns, parentName, "Alarm", alarmObj_id);
 		Alarm.setEnabled(false);
 		parent.addComponent(Alarm);
 		parent.addReference(Alarm, Identifiers.HasEventSource, false);
 		objFolder.addReference(parent, Identifiers.HasNotifier, false);
 		if (parentName.equals("M200") || parentName.equals("Y301") || parentName.equals("Y303") ||parentName.equals("Y501")) {
 			final NodeId alarmObj_id2 = new NodeId(ns, parentName + " Interrupt");
-			ConditionTypeNode Alarm2 = initAlarm(parentName, "Interrupt", alarmObj_id2);
+			ConditionTypeNode Alarm2 = initAlarm(ns, parentName, "Interrupt", alarmObj_id2);
 			Alarm2.setEnabled(false);
 			parent.addComponent(Alarm2);
 			parent.addReference(Alarm2, Identifiers.HasEventSource, false);
 		}
 	}
 	
-	private ConditionTypeNode initAlarm(String type, String name, NodeId id) {
+	private ConditionTypeNode initAlarm(int ns, String type, String name, NodeId id) {
 		ConditionTypeNode Alarm;
 		if (type.equals("P300") || type.equals("T300")) {
 			TypeDefinitionBasedNodeBuilderConfiguration.Builder conf = ConfigureLimitAlarm(type);
 			NodeBuilder<NonExclusiveLimitAlarmTypeNode> nb = createNodeBuilder(NonExclusiveLimitAlarmTypeNode.class, conf.build());
-			nb.setBrowseName(new QualifiedName(name));
+			nb.setBrowseName(new QualifiedName(ns, name));
 			nb.setDisplayName(new LocalizedText(name));
 			nb.setNodeId(id);
 			NonExclusiveLimitAlarmTypeNode Alarm1;

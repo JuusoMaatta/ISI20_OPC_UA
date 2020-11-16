@@ -96,6 +96,7 @@ public class AppEventManagerListener implements EventManagerListener {
 	private void setAlarmStatus(NonExclusiveLimitAlarmTypeNode alarm) {
 		DateTime now = DateTime.currentTime();
 		ByteString evId = getNextUserEventId();
+		alarm.setEventId(evId);
 		boolean active = alarm.getHighHighStateNode().getIdNode().getValue().getValue().booleanValue() ||
 				alarm.getHighStateNode().getIdNode().getValue().getValue().booleanValue() ||
 				alarm.getLowStateNode().getIdNode().getValue().getValue().booleanValue() ||
@@ -105,7 +106,10 @@ public class AppEventManagerListener implements EventManagerListener {
 	}
 
 	private void setAlarmStatus(AlarmConditionTypeNode alarm) {
-		// toinen toteutus
+		DateTime now = DateTime.currentTime();
+		ByteString evId = getNextUserEventId();
+		alarm.setEventId(evId);
+		alarm.triggerEvent(now, now, evId);
 	}
 
 	private void createMonitoredLimitAlarm(int sourceNs, String padim_name, MonitoredEventItem item, com.prosysopc.ua.client.Subscription clientSubscription) {
@@ -140,7 +144,6 @@ public class AppEventManagerListener implements EventManagerListener {
 
 		com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableL =
 				new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, padim_name + "_AlrmEvtL"), Attributes.Value, MonitoringMode.Reporting);
-		clientMonitoredAlarmVariableL.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
 		clientMonitoredAlarmVariableL.setDataChangeListener(new MonitoredDataItemListener() {
 			@Override
 			public void onDataChange(MonitoredDataItem monitoredDataItem, DataValue oldValue, DataValue newValue) {
@@ -155,7 +158,6 @@ public class AppEventManagerListener implements EventManagerListener {
 
 		com.prosysopc.ua.client.MonitoredDataItem clientMonitoredAlarmVariableLL =
 				new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, padim_name + "_AlrmEvtLL"), Attributes.Value, MonitoringMode.Reporting);
-		clientMonitoredAlarmVariableLL.setDataChangeListener(new AppMonitoredDataItemListener(this.server));
 		clientMonitoredAlarmVariableLL.setDataChangeListener(new MonitoredDataItemListener() {
 			@Override
 			public void onDataChange(MonitoredDataItem monitoredDataItem, DataValue oldValue, DataValue newValue) {
@@ -200,8 +202,8 @@ public class AppEventManagerListener implements EventManagerListener {
 				@Override
 				public void onDataChange(MonitoredDataItem monitoredDataItem, DataValue oldValue, DataValue newValue) {
 					AlarmConditionTypeNode alarm = ((AlarmConditionTypeNode)item.getNode());
-					alarm.setActive(newValue.getValue().booleanValue());
 					if (newValue.getValue().booleanValue() != oldValue.getValue().booleanValue()) {
+						alarm.setActive(newValue.getValue().booleanValue());
 						setAlarmStatus(alarm);
 					}
 				}
@@ -238,32 +240,32 @@ public class AppEventManagerListener implements EventManagerListener {
 			String padim_name = findPADIMParent(item.getNode()).getBrowseName().getName(); //TODO Find general parent
 			switch(padim_name) {
 				case("P300"):
-				createMonitoredLimitAlarm(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredLimitAlarm(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("T300"):
-				createMonitoredLimitAlarm(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredLimitAlarm(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("L300"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("L301"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("Y301"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("Y303"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("Y501"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("M200"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 				case("PIC300"):
-				createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
-				break;
+					createMonitoredAlarmCondition(sourceNs, padim_name, item, clientSubscription);
+					break;
 			}
 
 
@@ -273,9 +275,41 @@ public class AppEventManagerListener implements EventManagerListener {
 	}
 
 	@Override
-	public void onAfterDeleteMonitoredEventItem(ServiceContext arg0, Subscription arg1, MonitoredEventItem arg2) {
-		// TODO Auto-generated method stub
+	public void onAfterDeleteMonitoredEventItem(ServiceContext context, Subscription subscription, MonitoredEventItem item) {
+		try {
+			String padim_name = findPADIMParent(item.getNode()).getBrowseName().getName();
 
+			com.prosysopc.ua.client.Subscription clientSubscription = client.getSubscriptions()[0];
+			com.prosysopc.ua.MonitoredItemBase[] clientMonitoredItems = clientSubscription.getItems();
+
+			if (item.getNode() instanceof AlarmConditionTypeNode) {
+				AlarmConditionTypeNode alarmCondition = (AlarmConditionTypeNode)item.getNode();
+				for (com.prosysopc.ua.MonitoredItemBase clientItem : clientMonitoredItems) {
+					String clientItemName = clientItem.getNodeId().getValue().toString();
+					if (clientItemName.equals(padim_name + "_IntActive") ||
+							clientItemName.equals(padim_name + "_IntMsg") ||
+							clientItemName.equals(padim_name + "_AlrmEvtMsq") ||
+							clientItemName.equals(padim_name + "_AlrmEvtOn")) {
+						clientSubscription.removeItem(clientItem);
+					}
+				}
+			} else if (item.getNode() instanceof NonExclusiveLimitAlarmTypeNode) {
+				NonExclusiveLimitAlarmTypeNode limitAlarm = (NonExclusiveLimitAlarmTypeNode)item.getNode();
+				for (com.prosysopc.ua.MonitoredItemBase clientItem : clientMonitoredItems) {
+					String clientItemName = clientItem.getNodeId().getValue().toString();
+					if (clientItemName.equals(padim_name + "_AlrmEvtH") ||
+							clientItemName.equals(padim_name + "_AlrmEvtHH") ||
+							clientItemName.equals(padim_name + "_AlrmEvtL") ||
+							clientItemName.equals(padim_name + "_AlrmEvtLL") ||
+							clientItemName.equals(padim_name + "_AlrmEvtMsg") ||
+							clientItemName.equals(padim_name + "_AlrmEvtMsq")) {
+						clientSubscription.removeItem(clientItem);
+					}
+				}
+			}
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
 	}
 
 	@Override
