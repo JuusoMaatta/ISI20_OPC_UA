@@ -67,7 +67,8 @@ public class ServerNameTranslator {
         for (UaReference ref : refs) {
             if (ref.getSourceNode() == node &&
                     ref.getReferenceType().getDisplayName().getText().equals("HasTypeDefinition")) {
-                return ref.getTargetNode().getBrowseName().getName().equals("PADIMType");
+                return ref.getTargetNode().getBrowseName().getName().equals("PADIMType") ||
+                        ref.getTargetNode().getBrowseName().getName().equals("CtrlConfigurationType");
             }
         }
         return false;

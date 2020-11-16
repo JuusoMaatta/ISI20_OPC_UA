@@ -215,8 +215,13 @@ public class AppEventManagerListener implements EventManagerListener {
 				clientMonitoredAlarmVariableMsg =
 				new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, padim_name + "_IntMsg"), Attributes.Value, MonitoringMode.Reporting);
 			} else {
+				String msg_name = "_AlrmEvtMsg";
+			    if (padim_name.equals("PIC300") || padim_name.equals("M200") ||
+						padim_name.equals("Y301") || padim_name.equals("Y303") || padim_name.equals("Y501")) {
+			    	msg_name = "_AlrmEvtMsq";
+				}
 				clientMonitoredAlarmVariableMsg =
-				new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, padim_name + "_AlrmEvtMsq"), Attributes.Value, MonitoringMode.Reporting);
+				new com.prosysopc.ua.client.MonitoredDataItem(new NodeId(sourceNs, padim_name + msg_name), Attributes.Value, MonitoringMode.Reporting);
 			}
 			clientMonitoredAlarmVariableMsg.setDataChangeListener(new MonitoredDataItemListener() {
 				@Override
@@ -237,7 +242,7 @@ public class AppEventManagerListener implements EventManagerListener {
 		try {
 			int sourceNs = 2; // TODO get this from somewhere?
 			com.prosysopc.ua.client.Subscription clientSubscription = client.getSubscriptions()[0];
-			String padim_name = findPADIMParent(item.getNode()).getBrowseName().getName(); //TODO Find general parent
+			String padim_name = findPADIMParent(item.getNode()).getBrowseName().getName();
 			switch(padim_name) {
 				case("P300"):
 					createMonitoredLimitAlarm(sourceNs, padim_name, item, clientSubscription);
@@ -283,25 +288,23 @@ public class AppEventManagerListener implements EventManagerListener {
 			com.prosysopc.ua.MonitoredItemBase[] clientMonitoredItems = clientSubscription.getItems();
 
 			if (item.getNode() instanceof AlarmConditionTypeNode) {
-				AlarmConditionTypeNode alarmCondition = (AlarmConditionTypeNode)item.getNode();
 				for (com.prosysopc.ua.MonitoredItemBase clientItem : clientMonitoredItems) {
 					String clientItemName = clientItem.getNodeId().getValue().toString();
 					if (clientItemName.equals(padim_name + "_IntActive") ||
 							clientItemName.equals(padim_name + "_IntMsg") ||
 							clientItemName.equals(padim_name + "_AlrmEvtMsq") ||
+							clientItemName.equals(padim_name + "_AlrmEvtMsg") ||
 							clientItemName.equals(padim_name + "_AlrmEvtOn")) {
 						clientSubscription.removeItem(clientItem);
 					}
 				}
 			} else if (item.getNode() instanceof NonExclusiveLimitAlarmTypeNode) {
-				NonExclusiveLimitAlarmTypeNode limitAlarm = (NonExclusiveLimitAlarmTypeNode)item.getNode();
 				for (com.prosysopc.ua.MonitoredItemBase clientItem : clientMonitoredItems) {
 					String clientItemName = clientItem.getNodeId().getValue().toString();
 					if (clientItemName.equals(padim_name + "_AlrmEvtH") ||
 							clientItemName.equals(padim_name + "_AlrmEvtHH") ||
 							clientItemName.equals(padim_name + "_AlrmEvtL") ||
 							clientItemName.equals(padim_name + "_AlrmEvtLL") ||
-							clientItemName.equals(padim_name + "_AlrmEvtMsg") ||
 							clientItemName.equals(padim_name + "_AlrmEvtMsq")) {
 						clientSubscription.removeItem(clientItem);
 					}
